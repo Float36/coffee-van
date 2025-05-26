@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+
+<?import javafx.scene.control.Button?>
+<?import javafx.collections.FXCollections?>
+<?import java.lang.String?>
+
+<!--<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.yurii.coffeevan.coffeevan.VanController">-->
+
+<!--  &lt;!&ndash; TOP &ndash;&gt;-->
+<!--  <top>-->
+<!--    <HBox spacing="10" style="-fx-background-color: #333333;">-->
+<!--      <Label text="☕ Фургон кави" style="-fx-font-size: 20px; -fx-text-fill: white;" />-->
+<!--      <Pane HBox.hgrow="ALWAYS"/>-->
+<!--      <Button text="Завантажити каву" />-->
+<!--      <Button text="Очистити фургон" />-->
+<!--      <Button text="Зберегти" />-->
+<!--    </HBox>-->
+<!--  </top>-->
+
+<!--  &lt;!&ndash; CENTER &ndash;&gt;-->
+<!--  <center>-->
+<!--    <VBox spacing="10">-->
+
+<!--      &lt;!&ndash; Filters &ndash;&gt;-->
+<!--      <HBox spacing="10">-->
+<!--        <Label text="Фільтр за типом:" />-->
+<!--        <ComboBox fx:id="typeFilter" promptText="Виберіть тип"/>-->
+<!--        <Label text="Якість:" />-->
+<!--        <Slider fx:id="qualitySlider" min="0" max="100" />-->
+<!--        <Label fx:id="qualityLabel" text="0" />-->
+<!--        <Button text="Застосувати" />-->
+<!--      </HBox>-->
+
+<!--      &lt;!&ndash; Table &ndash;&gt;-->
+<!--      <TableView fx:id="coffeeTable" prefHeight="400">-->
+<!--        <columns>-->
+<!--          <TableColumn text="Назва" />-->
+<!--          <TableColumn text="Тип" />-->
+<!--          <TableColumn text="Обʼєм (мл)" />-->
+<!--          <TableColumn text="Ціна (₴)" />-->
+<!--          <TableColumn text="Вага (г)" />-->
+<!--          <TableColumn text="Якість (%)" />-->
+<!--        </columns>-->
+<!--      </TableView>-->
+
+<!--      &lt;!&ndash; Sorting &ndash;&gt;-->
+<!--      <HBox spacing="10" alignment="CENTER_LEFT">-->
+<!--        <Label text="Сортувати за:" />-->
+<!--        <ChoiceBox fx:id="sortChoice">-->
+<!--          <items>-->
+<!--            <FXCollections fx:factory="observableArrayList">-->
+<!--              <String fx:value="Ціна / вага" />-->
+<!--              <String fx:value="Якість" />-->
+<!--            </FXCollections>-->
+<!--          </items>-->
+<!--        </ChoiceBox>-->
+<!--        <Button text="Сортувати" />-->
+<!--      </HBox>-->
+<!--    </VBox>-->
+<!--  </center>-->
+
+<!--  &lt;!&ndash; RIGHT &ndash;&gt;-->
+<!--  <right>-->
+<!--    <VBox spacing="10" style="-fx-background-color: #f4f4f4;" prefWidth="250">-->
+<!--      <Label text="➕ Додати каву" style="-fx-font-size: 16px;" />-->
+<!--      <TextField fx:id="nameField" promptText="Назва" />-->
+<!--      <ComboBox fx:id="typeField" promptText="Тип кави" />-->
+<!--      <TextField fx:id="volumeField" promptText="Обʼєм (мл)" />-->
+<!--      <TextField fx:id="priceField" promptText="Ціна (₴)" />-->
+<!--      <TextField fx:id="weightField" promptText="Вага (г)" />-->
+<!--      <Slider fx:id="qualityField" min="0" max="100" />-->
+<!--      <Label fx:id="qualityValueLabel" text="0" />-->
+<!--      <Button text="Додати каву" onAction="#handleAddCoffee" />-->
+<!--    </VBox>-->
+<!--  </right>-->
+
+<!--</BorderPane>-->
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.yurii.coffeevan.coffeevan.VanController">
+
+  <!-- TOP -->
+  <top>
+    <HBox spacing="10" style="-fx-background-color: #333333;">
+      <Label text="☕ Фургон кави" style="-fx-font-size: 20px; -fx-text-fill: white;" />
+      <Pane HBox.hgrow="ALWAYS"/>
+      <Button text="Завантажити каву" fx:id="loadButton"/>
+      <Button text="Очистити фургон" fx:id="clearButton"/>
+      <Button text="Зберегти" fx:id="saveButton"/>
+    </HBox>
+  </top>
+
+  <!-- CENTER -->
+  <center>
+    <VBox spacing="10">
+
+      <!-- Filters -->
+      <HBox spacing="10">
+        <Label text="Фільтр за типом:" />
+        <ComboBox fx:id="typeFilter" promptText="Виберіть тип"/>
+        <Label text="Якість:" />
+        <Slider fx:id="qualitySlider" min="0" max="100" />
+        <Label fx:id="qualityLabel" text="0" />
+        <Button text="Застосувати" fx:id="filterButton"/>
+      </HBox>
+
+      <!-- Table -->
+      <TableView fx:id="coffeeTable" prefHeight="400">
+        <columns>
+          <TableColumn fx:id="nameColumn" text="Назва" />
+          <TableColumn fx:id="typeColumn" text="Тип" />
+          <TableColumn fx:id="volumeColumn" text="Обʼєм (мл)" />
+          <TableColumn fx:id="priceColumn" text="Ціна (₴)" />
+          <TableColumn fx:id="weightColumn" text="Вага (г)" />
+          <TableColumn fx:id="qualityColumn" text="Кількість" />
+        </columns>
+      </TableView>
+
+
+      <!-- Sorting -->
+      <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="Сортувати за:" />
+        <ChoiceBox fx:id="sortChoice">
+          <items>
+            <FXCollections fx:factory="observableArrayList">
+              <String fx:value="Ціна / вага" />
+              <String fx:value="Якість" />
+            </FXCollections>
+          </items>
+        </ChoiceBox>
+        <Button text="Сортувати" fx:id="sortButton"/>
+      </HBox>
+    </VBox>
+  </center>
+
+  <!-- RIGHT -->
+  <right>
+    <VBox spacing="10" style="-fx-background-color: #f4f4f4;" prefWidth="250">
+      <Label text="➕ Додати каву" style="-fx-font-size: 16px;" />
+      <TextField fx:id="nameField" promptText="Назва" />
+      <ComboBox fx:id="typeField" promptText="Тип кави" />
+      <TextField fx:id="volumeField" promptText="Обʼєм (мл)" />
+      <TextField fx:id="priceField" promptText="Ціна (₴)" />
+      <TextField fx:id="weightField" promptText="Вага (г)" />
+      <Slider fx:id="qualityField" min="1" max="100" />
+      <Label fx:id="qualityValueLabel" text="0" />
+      <Button text="Додати каву" onAction="#handleAddCoffee" />
+    </VBox>
+  </right>
+
+  <!-- BOTTOM -->
+  <bottom>
+    <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10;">
+      <Label text="Загальний обʼєм кави у фургоні:" />
+      <Label fx:id="totalVolumeLabel" text="0 мл" style="-fx-font-weight: bold;" />
+    </HBox>
+  </bottom>
+
+</BorderPane>
+
