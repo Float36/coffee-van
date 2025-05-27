@@ -16,10 +16,16 @@ public class MainApp extends Application {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("hello-view.fxml"));
         Parent root = loader.load();
 
-        Scene scene = new Scene(root, 1000, 600);
-        primaryStage.setTitle("Фургон кави ☕");
+        Scene scene = new Scene(root, 1200, 700);
+        primaryStage.setTitle("Фургон кави");
         primaryStage.setScene(scene);
-//        primaryStage.getIcons().add(new Image("C:/LP/4/kyrsova/coffee-van/src/main/resources/com/yurii/coffeevan/coffeevan/img/icon.png")); // Необов’язково, якщо є іконка
+        
+        // Завантаження іконки з ресурсів
+        Image icon = new Image(getClass().getResourceAsStream("img/icon.png"));
+        if (icon != null) {
+            primaryStage.getIcons().add(icon);
+        }
+        
         primaryStage.show();
     }
 

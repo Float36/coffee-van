@@ -6,7 +6,7 @@ import com.yurii.coffeevan.coffeevan.model.*;
 
 public class Van {
 
-    private static final double MAX_CAPACITY = 5000.0; // у мілілітрах (мл)
+    private static final double MAX_CAPACITY = 5000000.0; // у мілілітрах (мл)
     private List<Coffee> coffeeList;
     private double currentVolume;
 
@@ -18,7 +18,15 @@ public class Van {
     public boolean addCoffee(Coffee coffee) {
         if (getTotalVolume() + coffee.getCoffeeVolume() <= MAX_CAPACITY) {
             coffeeList.add(coffee);
-            currentVolume += coffee.getVolume();
+            currentVolume += coffee.getCoffeeVolume();
+            return true;
+        }
+        return false;
+    }
+
+    public boolean removeCoffee(Coffee coffee) {
+        if (coffeeList.remove(coffee)) {
+            currentVolume -= coffee.getCoffeeVolume();
             return true;
         }
         return false;
@@ -56,7 +64,7 @@ public class Van {
                 .toList();
     }
 
-    public List<Coffee> filterByQuality(double minQuality) {
+    public List<Coffee> filterByQuality(int minQuality) {
         return coffeeList.stream()
                 .filter(c -> c.getQuality() >= minQuality)
                 .toList();
@@ -70,7 +78,7 @@ public class Van {
 
     public List<Coffee> sortByQuality() {
         return coffeeList.stream()
-                .sorted((c1, c2) -> Double.compare(c2.getQuality(), c1.getQuality()))
+                .sorted((c1, c2) -> Integer.compare(c2.getQuality(), c1.getQuality()))
                 .toList();
     }
 }
