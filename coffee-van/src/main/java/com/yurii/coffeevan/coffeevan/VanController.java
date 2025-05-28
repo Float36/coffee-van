@@ -58,11 +58,13 @@ public class VanController {
     private ObservableList<Coffee> allCoffee;
     private FilteredList<Coffee> filteredCoffee;
     private SortedList<Coffee> sortedCoffee;
+    private VanService vanService;
 
     @FXML
     public void initialize() {
         // Ініціалізація фургона та списків
         van = new Van();
+        vanService = new VanService();
         allCoffee = FXCollections.observableArrayList();
         filteredCoffee = new FilteredList<>(allCoffee, p -> true);
         sortedCoffee = new SortedList<>(filteredCoffee);
@@ -288,7 +290,7 @@ public class VanController {
 
     private void handleSaveVan() {
         try {
-            int vanId = VanService.saveVan(van);
+            int vanId = vanService.saveVan(van);
             showAlert(Alert.AlertType.INFORMATION, "Успіх", "Фургон успішно збережено в базі даних!");
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Помилка", "Не вдалося зберегти фургон: " + e.getMessage());

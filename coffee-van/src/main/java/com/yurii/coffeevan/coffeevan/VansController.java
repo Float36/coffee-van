@@ -13,7 +13,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class VansController {
     
@@ -39,9 +41,11 @@ public class VansController {
     private Button deleteButton;
     
     private ObservableList<VanEntry> vans = FXCollections.observableArrayList();
+    private VanService vanService;
     
     @FXML
     public void initialize() {
+        vanService = new VanService();
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
         volumeColumn.setCellValueFactory(new PropertyValueFactory<>("totalVolume"));
         dateColumn.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
@@ -87,7 +91,7 @@ public class VansController {
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 try {
                     // Видаляємо фургон з бази даних
-                    VanService.deleteVan(selectedVan.getId());
+                    vanService.deleteVan(selectedVan.getId());
                     // Видаляємо фургон з таблиці
                     vans.remove(selectedVan);
                     showAlert(Alert.AlertType.INFORMATION, "Видалено", 
@@ -102,7 +106,11 @@ public class VansController {
     
     private void loadVans() {
         try {
-            vans.setAll(VanService.getAllVans());
+            List<VanService.VanEntry> serviceEntries = vanService.loadAllVans();
+            List<VanEntry> controllerEntries = serviceEntries.stream()
+                .map(e -> new VanEntry(e.getId(), e.getTotalVolume(), e.getCreatedAt()))
+                .collect(Collectors.toList());
+            vans.setAll(controllerEntries);
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Помилка", "Не вдалося завантажити дані фургонів: " + e.getMessage());
         }
@@ -124,7 +132,7 @@ public class VansController {
             // Get controller and set data
             VanCoffeeController controller = loader.getController();
             controller.setVanInfo(selectedVan);
-            controller.setCoffeeList(FXCollections.observableArrayList(VanService.getVanCoffee(selectedVan.getId())));
+            controller.setCoffeeList(FXCollections.observableArrayList(vanService.loadVan(selectedVan.getId()).getAllCoffee()));
             
             // Show window
             Stage stage = new Stage();

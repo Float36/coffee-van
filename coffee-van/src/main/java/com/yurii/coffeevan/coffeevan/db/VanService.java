@@ -1,23 +1,118 @@
 package com.yurii.coffeevan.coffeevan.db;
 
 import com.yurii.coffeevan.coffeevan.model.*;
-import com.yurii.coffeevan.coffeevan.model.Van;
-import com.yurii.coffeevan.coffeevan.VansController.VanEntry;
-
 import java.sql.*;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class VanService {
     
-    public static List<VanEntry> getAllVans() throws SQLException {
-        String selectVansSQL = "SELECT id, total_volume, created_at FROM vans ORDER BY created_at DESC";
-        List<VanEntry> vans = new ArrayList<>();
+    public VanService() {
+        // Перевіряємо, чи встановлені тестові налаштування
+        // isTestMode = System.getProperty("db.url") != null && 
+        //              System.getProperty("db.url").contains("h2:mem:testdb");
+    }
+    
+    public static class VanEntry {
+        private final int id;
+        private final int totalVolume;
+        private final Timestamp createdAt;
         
+        public VanEntry(int id, int totalVolume, Timestamp createdAt) {
+            this.id = id;
+            this.totalVolume = totalVolume;
+            this.createdAt = createdAt;
+        }
+        
+        public int getId() { return id; }
+        public int getTotalVolume() { return totalVolume; }
+        public Timestamp getCreatedAt() { return createdAt; }
+    }
+
+    public int saveVan(Van van) {
+        int vanId = -1;
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                // Insert van
+                try (PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT INTO vans (total_volume) VALUES (?)",
+                    Statement.RETURN_GENERATED_KEYS
+                )) {
+                    stmt.setInt(1, van.getTotalVolume());
+                    stmt.executeUpdate();
+
+                    try (ResultSet rs = stmt.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            vanId = rs.getInt(1);
+                        }
+                    }
+                }
+
+                // Insert coffee
+                try (PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT INTO coffee (van_id, name, type, volume, price, weight, quality, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+                )) {
+                    for (Coffee coffee : van.getAllCoffee()) {
+                        stmt.setInt(1, vanId);
+                        stmt.setString(2, coffee.getName());
+                        stmt.setString(3, coffee.getType());
+                        stmt.setInt(4, coffee.getVolume());
+                        stmt.setDouble(5, coffee.getPrice());
+                        stmt.setInt(6, coffee.getWeight());
+                        stmt.setInt(7, coffee.getQuality());
+                        stmt.setInt(8, coffee.getQuantity());
+                        stmt.executeUpdate();
+                    }
+                }
+
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+        return vanId;
+    }
+
+    public Van loadVan(int vanId) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            // First check if van exists
+            try (PreparedStatement stmt = conn.prepareStatement("SELECT * FROM vans WHERE id = ?")) {
+                stmt.setInt(1, vanId);
+                ResultSet rs = stmt.executeQuery();
+                if (!rs.next()) {
+                    return null;
+                }
+            }
+
+            // Load coffee for the van
+            try (PreparedStatement stmt = conn.prepareStatement("SELECT * FROM coffee WHERE van_id = ?")) {
+                stmt.setInt(1, vanId);
+                ResultSet rs = stmt.executeQuery();
+
+                Van van = new Van();
+                while (rs.next()) {
+                    Coffee coffee = createCoffeeFromResultSet(rs);
+                    van.addCoffee(coffee);
+                }
+                return van;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public List<VanEntry> loadAllVans() {
+        List<VanEntry> vans = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(selectVansSQL)) {
+             Statement stmt = conn.createStatement()) {
             
+            ResultSet rs = stmt.executeQuery("SELECT * FROM vans ORDER BY created_at DESC");
             while (rs.next()) {
                 vans.add(new VanEntry(
                     rs.getInt("id"),
@@ -25,146 +120,54 @@ public class VanService {
                     rs.getTimestamp("created_at")
                 ));
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return vans;
     }
-    
-    public static int saveVan(Van van) throws SQLException {
-        String insertVanSQL = "INSERT INTO vans (total_volume) VALUES (?)";
-        
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(insertVanSQL, Statement.RETURN_GENERATED_KEYS)) {
-            
-            pstmt.setInt(1, van.getTotalVolume());
-            pstmt.executeUpdate();
-            
-            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    int vanId = generatedKeys.getInt(1);
-                    saveCoffeeList(vanId, van.getAllCoffee());
-                    return vanId;
-                } else {
-                    throw new SQLException("Failed to get van ID");
-                }
-            }
-        }
-    }
 
-    public static void deleteVan(int vanId) throws SQLException {
-        // Спочатку видаляємо всю каву з цього фургону
-        String deleteCoffeeSQL = "DELETE FROM coffee WHERE van_id = ?";
-        // Потім видаляємо сам фургон
-        String deleteVanSQL = "DELETE FROM vans WHERE id = ?";
-        
+    public boolean deleteVan(int vanId) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            // Встановлюємо автокоміт в false для транзакції
             conn.setAutoCommit(false);
-            
             try {
-                // Видаляємо каву
-                try (PreparedStatement pstmt = conn.prepareStatement(deleteCoffeeSQL)) {
-                    pstmt.setInt(1, vanId);
-                    pstmt.executeUpdate();
+                // Delete coffee first due to foreign key constraint
+                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM coffee WHERE van_id = ?")) {
+                    stmt.setInt(1, vanId);
+                    stmt.executeUpdate();
                 }
-                
-                // Видаляємо фургон
-                try (PreparedStatement pstmt = conn.prepareStatement(deleteVanSQL)) {
-                    pstmt.setInt(1, vanId);
-                    pstmt.executeUpdate();
+
+                // Then delete van
+                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM vans WHERE id = ?")) {
+                    stmt.setInt(1, vanId);
+                    int rowsAffected = stmt.executeUpdate();
+                    conn.commit();
+                    return rowsAffected > 0;
                 }
-                
-                // Якщо все успішно, підтверджуємо транзакцію
-                conn.commit();
             } catch (SQLException e) {
-                // У разі помилки відкочуємо зміни
                 conn.rollback();
                 throw e;
-            } finally {
-                // Відновлюємо автокоміт
-                conn.setAutoCommit(true);
             }
-        }
-    }
-    
-    private static void saveCoffeeList(int vanId, List<Coffee> coffeeList) throws SQLException {
-        String insertCoffeeSQL = """
-            INSERT INTO coffee (van_id, name, type, volume, price, weight, quality, quantity)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """;
-        
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(insertCoffeeSQL)) {
-            
-            for (Coffee coffee : coffeeList) {
-                pstmt.setInt(1, vanId);
-                pstmt.setString(2, coffee.getName());
-                pstmt.setString(3, coffee.getType());
-                pstmt.setInt(4, coffee.getVolume());
-                pstmt.setDouble(5, coffee.getPrice());
-                pstmt.setInt(6, coffee.getWeight());
-                pstmt.setInt(7, coffee.getQuality());
-                pstmt.setInt(8, coffee.getQuantity());
-                pstmt.executeUpdate();
-            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
-    public static List<Coffee> getVanCoffee(int vanId) throws SQLException {
-        String selectCoffeeSQL = """
-            SELECT name, type, volume, price, weight, quality, quantity 
-            FROM coffee 
-            WHERE van_id = ?
-        """;
-        
-        List<Coffee> coffeeList = new ArrayList<>();
-        
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(selectCoffeeSQL)) {
-            
-            pstmt.setInt(1, vanId);
-            
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    String type = rs.getString("type");
-                    Coffee coffee = switch (type) {
-                        case "Зернова" -> new BeanCoffee(
-                            rs.getString("name"),
-                            rs.getInt("volume"),
-                            rs.getDouble("price"),
-                            rs.getInt("weight"),
-                            rs.getInt("quality"),
-                            rs.getInt("quantity")
-                        );
-                        case "Мелена" -> new GroundCoffee(
-                            rs.getString("name"),
-                            rs.getInt("volume"),
-                            rs.getDouble("price"),
-                            rs.getInt("weight"),
-                            rs.getInt("quality"),
-                            rs.getInt("quantity")
-                        );
-                        case "Розчинна (банка)" -> new InstantJarCoffee(
-                            rs.getString("name"),
-                            rs.getInt("volume"),
-                            rs.getDouble("price"),
-                            rs.getInt("weight"),
-                            rs.getInt("quality"),
-                            rs.getInt("quantity")
-                        );
-                        case "Розчинна (пакетик)" -> new InstantPacketCoffee(
-                            rs.getString("name"),
-                            rs.getInt("volume"),
-                            rs.getDouble("price"),
-                            rs.getInt("weight"),
-                            rs.getInt("quality"),
-                            rs.getInt("quantity")
-                        );
-                        default -> throw new SQLException("Невідомий тип кави: " + type);
-                    };
-                    coffeeList.add(coffee);
-                }
-            }
-        }
-        return coffeeList;
+    private Coffee createCoffeeFromResultSet(ResultSet rs) throws SQLException {
+        String name = rs.getString("name");
+        String type = rs.getString("type");
+        int volume = rs.getInt("volume");
+        double price = rs.getDouble("price");
+        int weight = rs.getInt("weight");
+        int quality = rs.getInt("quality");
+        int quantity = rs.getInt("quantity");
+
+        return switch (type) {
+            case "Зернова" -> new BeanCoffee(name, volume, price, weight, quality, quantity);
+            case "Мелена" -> new GroundCoffee(name, volume, price, weight, quality, quantity);
+            case "Розчинна (банка)" -> new InstantJarCoffee(name, volume, price, weight, quality, quantity);
+            case "Розчинна (пакетик)" -> new InstantPacketCoffee(name, volume, price, weight, quality, quantity);
+            default -> new Coffee(name, type, volume, price, weight, quality, quantity);
+        };
     }
 } 
