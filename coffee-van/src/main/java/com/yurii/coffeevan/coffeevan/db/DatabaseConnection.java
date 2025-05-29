@@ -5,20 +5,27 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+// Керування підключенням до бд
 public class DatabaseConnection {
     private static Connection connection = null;
 
+    // Створює підключення до MySQL
     public static Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection(
-                DatabaseConfig.getUrl(),
-                DatabaseConfig.getUser(),
-                DatabaseConfig.getPassword()
-            );
+            try {
+                connection = DriverManager.getConnection(
+                    DatabaseConfig.getUrl(),
+                    DatabaseConfig.getUser(),
+                    DatabaseConfig.getPassword()
+                );
+            } catch (SQLException e) {
+                throw e;
+            }
         }
         return connection;
     }
 
+    // Створює таблиці якщо їх ще нема
     public static void initializeDatabase() {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
@@ -49,11 +56,11 @@ public class DatabaseConnection {
             """);
 
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new RuntimeException("Failed to initialize database: " + e.getMessage());
         }
     }
 
+    // Закриває з’єднання з базою, якщо воно відкрите
     public static void closeConnection() {
         if (connection != null) {
             try {

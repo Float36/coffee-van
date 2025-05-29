@@ -1,6 +1,7 @@
 package com.yurii.coffeevan.coffeevan;
 
 import com.yurii.coffeevan.coffeevan.model.Coffee;
+import com.yurii.coffeevan.coffeevan.util.LoggerUtil;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -12,6 +13,7 @@ import javafx.stage.Stage;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 
+// Керування сторінкою вмісту фургону
 public class VanCoffeeController {
     
     @FXML
@@ -74,58 +76,67 @@ public class VanCoffeeController {
     
     @FXML
     public void initialize() {
-        // Ініціалізація списків
-        filteredCoffee = new FilteredList<>(allCoffee, p -> true);
-        sortedCoffee = new SortedList<>(filteredCoffee);
-        sortedCoffee.comparatorProperty().bind(coffeeTable.comparatorProperty());
-        
-        // Налаштування таблиці
-        coffeeTable.setItems(sortedCoffee);
-        
-        // Налаштування колонок
-        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-        typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
-        volumeColumn.setCellValueFactory(new PropertyValueFactory<>("volume"));
-        priceColumn.setCellValueFactory(new PropertyValueFactory<>("price"));
-        weightColumn.setCellValueFactory(new PropertyValueFactory<>("weight"));
-        qualityColumn.setCellValueFactory(new PropertyValueFactory<>("quality"));
-        qualityTypeColumn.setCellValueFactory(data -> 
-            new SimpleStringProperty(getQualityType(data.getValue().getQuality())));
-        quantityColumn.setCellValueFactory(new PropertyValueFactory<>("quantity"));
-        
-        // Налаштування фільтра типів
-        typeFilter.setItems(FXCollections.observableArrayList(
-            "Всі типи",
-            "Зернова", 
-            "Мелена", 
-            "Розчинна (банка)", 
-            "Розчинна (пакетик)"
-        ));
-        typeFilter.setValue("Всі типи");
-        
-        // Налаштування фільтра за типом якості
-        qualityTypeChoice.setItems(FXCollections.observableArrayList(
-            "Всі типи",
-            "Низька якість",
-            "Нижче середньої",
-            "Середня",
-            "Висока",
-            "Преміум"
-        ));
-        qualityTypeChoice.setValue("Всі типи");
-        
-        // Налаштування слухачів подій
-        typeFilter.setOnAction(e -> applyFilter());
-        qualityTypeChoice.setOnAction(e -> applyFilter());
-        resetFiltersButton.setOnAction(e -> resetFilters());
+        try {
+            // Ініціалізація списків
+            filteredCoffee = new FilteredList<>(allCoffee, p -> true);
+            sortedCoffee = new SortedList<>(filteredCoffee);
+            sortedCoffee.comparatorProperty().bind(coffeeTable.comparatorProperty());
+            
+            // Налаштування таблиці
+            coffeeTable.setItems(sortedCoffee);
+            
+            // Налаштування колонок
+            nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+            typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
+            volumeColumn.setCellValueFactory(new PropertyValueFactory<>("volume"));
+            priceColumn.setCellValueFactory(new PropertyValueFactory<>("price"));
+            weightColumn.setCellValueFactory(new PropertyValueFactory<>("weight"));
+            qualityColumn.setCellValueFactory(new PropertyValueFactory<>("quality"));
+            qualityTypeColumn.setCellValueFactory(data -> 
+                new SimpleStringProperty(getQualityType(data.getValue().getQuality())));
+            quantityColumn.setCellValueFactory(new PropertyValueFactory<>("quantity"));
+            
+            // Налаштування фільтра типів
+            typeFilter.setItems(FXCollections.observableArrayList(
+                "Всі типи",
+                "Зернова", 
+                "Мелена", 
+                "Розчинна (банка)", 
+                "Розчинна (пакетик)"
+            ));
+            typeFilter.setValue("Всі типи");
+            
+            // Налаштування фільтра за типом якості
+            qualityTypeChoice.setItems(FXCollections.observableArrayList(
+                "Всі типи",
+                "Низька якість",
+                "Нижче середньої",
+                "Середня",
+                "Висока",
+                "Преміум"
+            ));
+            qualityTypeChoice.setValue("Всі типи");
+            
+            // Налаштування слухачів подій
+            typeFilter.setOnAction(e -> applyFilter());
+            qualityTypeChoice.setOnAction(e -> applyFilter());
+            resetFiltersButton.setOnAction(e -> resetFilters());
+
+            LoggerUtil.info("Coffee contents view initialized successfully");
+        } catch (Exception e) {
+            LoggerUtil.error("Failed to initialize coffee contents view", e);
+        }
     }
-    
+
+    // очищує задані фільтри
     private void resetFilters() {
         typeFilter.setValue("Всі типи");
         qualityTypeChoice.setValue("Всі типи");
+        LoggerUtil.info("Filters reset to default values");
         applyFilter();
     }
-    
+
+    // Перетворює числове значення якості у текстовий опис
     private String getQualityType(int quality) {
         if (quality >= 1 && quality <= 20) return "Низька якість";
         if (quality >= 21 && quality <= 40) return "Нижче середньої";
@@ -134,18 +145,20 @@ public class VanCoffeeController {
         if (quality >= 81 && quality <= 100) return "Преміум";
         return "Невідома якість";
     }
-    
-    private int getMinQualityForType(String qualityType) {
-        return switch (qualityType) {
-            case "Низька якість" -> 1;
-            case "Нижче середньої" -> 21;
-            case "Середня" -> 41;
-            case "Висока" -> 61;
-            case "Преміум" -> 81;
-            default -> 0;
-        };
-    }
-    
+
+
+//    private int getMinQualityForType(String qualityType) {
+//        return switch (qualityType) {
+//            case "Низька якість" -> 1;
+//            case "Нижче середньої" -> 21;
+//            case "Середня" -> 41;
+//            case "Висока" -> 61;
+//            case "Преміум" -> 81;
+//            default -> 0;
+//        };
+//    }
+
+    // Фільтрація списку кави за обраними критеріями
     private void applyFilter() {
         String selectedType = typeFilter.getValue();
         String selectedQualityType = qualityTypeChoice.getValue();
@@ -162,10 +175,11 @@ public class VanCoffeeController {
             return typeMatch && qualityMatch;
         });
         
-        updateInfo();
+        updateStatistics();
     }
-    
-    private void updateInfo() {
+
+    // Оновлення статистики про вміст фургона
+    private void updateStatistics() {
         int totalVolume = filteredCoffee.stream()
                 .mapToInt(coffee -> coffee.getVolume() * coffee.getQuantity())
                 .sum();
@@ -186,22 +200,31 @@ public class VanCoffeeController {
         totalVolumeLabel.setText(String.format("Загальний об'єм: %d мл", totalVolume));
         totalWeightLabel.setText(String.format("Загальна вага: %d г", totalWeight));
         averageQualityLabel.setText(String.format("Середня якість: %.1f", averageQuality));
-        totalPriceLabel.setText(String.format("Загальна вартість: %.2f ₴", totalPrice));
+        totalPriceLabel.setText(String.format("Загальна вартість: %.2f грн", totalPrice));
+        
+        LoggerUtil.debug(String.format("Updated statistics - Volume: %d ml, Weight: %d g, Avg Quality: %.1f, Total Price: %.2f UAH",
+            totalVolume, totalWeight, averageQuality, totalPrice));
     }
-    
+
+    // Змінює дані на обраний фургон
     public void setVanInfo(VansController.VanEntry van) {
         vanInfoLabel.setText(String.format("Фургон #%d | Створено: %s", 
             van.getId(), 
             van.getCreatedAt().toString().replace(".0", "")));
+        LoggerUtil.info("Set van info for van #" + van.getId());
     }
-    
+
+    // Оновлює список кави
     public void setCoffeeList(ObservableList<Coffee> coffee) {
         allCoffee.setAll(coffee);
         applyFilter();
+        updateStatistics();
+        LoggerUtil.info("Loaded " + coffee.size() + " coffee items");
     }
     
     @FXML
     private void handleClose() {
         ((Stage) closeButton.getScene().getWindow()).close();
+        LoggerUtil.info("Closed coffee contents window");
     }
 } 

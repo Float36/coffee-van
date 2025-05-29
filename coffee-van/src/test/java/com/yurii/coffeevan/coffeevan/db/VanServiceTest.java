@@ -22,8 +22,8 @@ class VanServiceTest {
     }
 
     @BeforeEach
-    void setUp() {
-        vanService = new VanService();
+    void setUp() throws SQLException {
+        vanService = new VanService(DatabaseConnection.getConnection());
         testVan = new Van();
         testVanIds = new ArrayList<>();
         

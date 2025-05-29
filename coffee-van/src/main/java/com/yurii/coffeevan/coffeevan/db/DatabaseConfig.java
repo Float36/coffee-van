@@ -1,5 +1,6 @@
 package com.yurii.coffeevan.coffeevan.db;
 
+// Конфігураційний клас для підключення
 public class DatabaseConfig {
     private static final String URL = "jdbc:mysql://localhost:3306/coffee_van_db";
     private static final String USER = "root";

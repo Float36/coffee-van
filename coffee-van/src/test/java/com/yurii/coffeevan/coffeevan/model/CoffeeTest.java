@@ -37,12 +37,6 @@ class CoffeeTest {
         assertEquals(0.5, coffee.getPriceToWeightRatio(), "Price to weight ratio should be price / weight");
     }
 
-    @Test
-    @DisplayName("Should handle zero weight when calculating price ratio")
-    void testGetPriceToWeightRatioWithZeroWeight() {
-        Coffee coffee = new Coffee("Arabica", "Зернова", 1000, 250.0, 0, 85, 2);
-        assertEquals(0, coffee.getPriceToWeightRatio(), "Price to weight ratio should be 0 when weight is 0");
-    }
 
     @ParameterizedTest
     @CsvSource({

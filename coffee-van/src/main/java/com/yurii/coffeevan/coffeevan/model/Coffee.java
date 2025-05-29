@@ -1,22 +1,46 @@
 package com.yurii.coffeevan.coffeevan.model;
 
+// Батьківський клас для зберігання даних кави
 public class Coffee {
     protected String name;
     protected String type;
-    protected int volume;
+    protected int volume;           // об'єм
     protected double price;
     protected int weight;
-    protected int quality;
-    protected int quantity;
+    protected int quality;          // кількість
+    protected int quantity;         // якість
 
+    //
     public Coffee(String name, String type, int volume, double price, int weight, int quality, int quantity) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Ім'я кави не може бути порожнім");
+        }
+        if (type == null || type.trim().isEmpty()) {
+            throw new IllegalArgumentException("Тип кави не може бути порожнім");
+        }
+        if (volume <= 0) {
+            throw new IllegalArgumentException("Об'єм має бути більше 0");
+        }
+        if (price <= 0) {
+            throw new IllegalArgumentException("Ціна має бути більше 0");
+        }
+        if (weight <= 0) {
+            throw new IllegalArgumentException("Вага має бути більше 0");
+        }
+        if (quality < 0 || quality > 100) {
+            throw new IllegalArgumentException("Якість має бути від 0 до 100");
+        }
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Кількість має бути більше 0");
+        }
+        
         this.name = name;
         this.type = type;
         this.volume = volume;
         this.price = price;
         this.weight = weight;
         this.quality = quality;
-        this.quantity= quantity;
+        this.quantity = quantity;
     }
 
     public String getName() { return name; }

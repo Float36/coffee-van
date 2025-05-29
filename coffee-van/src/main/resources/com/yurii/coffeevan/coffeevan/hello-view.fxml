@@ -25,12 +25,13 @@
         <Label text="Фургон кави" styleClass="header-text"/>
         <Pane HBox.hgrow="ALWAYS"/>
         <Button text="Видалити вибране" fx:id="deleteButton" onAction="#handleDeleteSelected" styleClass="danger-button"/>
+        <Button text="Скопіювати" fx:id="editButton" onAction="#handleEdit" styleClass="warning-button"/>
         <Button text="Завантажити каву" fx:id="loadButton" styleClass="action-button"/>
         <Button text="Очистити фургон" fx:id="clearButton" styleClass="warning-button"/>
         <Button text="Зберегти" fx:id="saveButton" styleClass="success-button"/>
       </HBox>
 
-      <!-- Filters -->
+      <!-- Фільтри -->
       <HBox spacing="10" styleClass="filters-bar">
         <padding>
           <Insets top="10" right="15" bottom="10" left="15"/>
@@ -53,7 +54,7 @@
         <Insets top="10" right="15" bottom="10" left="15"/>
       </padding>
 
-      <!-- Table -->
+      <!-- Таблиця -->
       <TableView fx:id="coffeeTable" VBox.vgrow="ALWAYS" styleClass="coffee-table">
         <columns>
           <TableColumn fx:id="nameColumn" text="Назва" prefWidth="200"/>
@@ -80,7 +81,8 @@
         <Insets top="20" right="20" bottom="20" left="20"/>
       </padding>
       <Label text="Додати каву" styleClass="section-header"/>
-      
+
+  <!-- Додавання кави -->
       <VBox spacing="10">
         <TextField fx:id="nameField" promptText="Назва" styleClass="input-field"/>
         <ComboBox fx:id="typeField" promptText="Тип кави" styleClass="input-field" maxWidth="Infinity"/>

@@ -2,6 +2,8 @@ package com.yurii.coffeevan.coffeevan;
 
 import com.yurii.coffeevan.coffeevan.model.Van;
 import com.yurii.coffeevan.coffeevan.db.VanService;
+import com.yurii.coffeevan.coffeevan.db.DatabaseConnection;
+import com.yurii.coffeevan.coffeevan.util.LoggerUtil;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -12,11 +14,14 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+
+// Керування сторінкою вибору фургонів
 public class VansController {
     
     @FXML
@@ -40,43 +45,54 @@ public class VansController {
     @FXML
     private Button deleteButton;
     
-    private ObservableList<VanEntry> vans = FXCollections.observableArrayList();
+    private ObservableList<VanEntry> vans = FXCollections.observableArrayList();        // Список всіх фургонів
     private VanService vanService;
     
     @FXML
     public void initialize() {
-        vanService = new VanService();
-        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
-        volumeColumn.setCellValueFactory(new PropertyValueFactory<>("totalVolume"));
-        dateColumn.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
-        
-        // Format date column
-        dateColumn.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(Timestamp item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.toString().replace(".0", ""));
-                }
-            }
-        });
-        
-        vansTable.setItems(vans);
+        try {
+            vanService = new VanService(DatabaseConnection.getConnection());        // Підключення до бд
 
-        // Додаємо слухач вибору рядка для активації/деактивації кнопок
-        vansTable.getSelectionModel().selectedItemProperty().addListener(
-            (obs, oldSelection, newSelection) -> {
-                boolean hasSelection = newSelection != null;
-                deleteButton.setDisable(!hasSelection);
-                showCoffeeButton.setDisable(!hasSelection);
-            }
-        );
-        
-        loadVans();
+            // Прив'язка даних до колонк
+            idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+            volumeColumn.setCellValueFactory(new PropertyValueFactory<>("totalVolume"));
+            dateColumn.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
+            
+            // Форматуванян дати
+            dateColumn.setCellFactory(column -> new TableCell<>() {
+                @Override
+                protected void updateItem(Timestamp item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                    } else {
+                        setText(item.toString().replace(".0", ""));
+                    }
+                }
+            });
+
+            // Прив'язка даних до таблиці
+            vansTable.setItems(vans);
+
+            // Додаємо слухач вибору рядка для активації/деактивації кнопок
+            vansTable.getSelectionModel().selectedItemProperty().addListener(
+                (obs, oldSelection, newSelection) -> {
+                    boolean hasSelection = newSelection != null;
+                    deleteButton.setDisable(!hasSelection);
+                    showCoffeeButton.setDisable(!hasSelection);
+                }
+            );
+
+
+            loadVans();
+            LoggerUtil.info("Vans view initialized successfully");
+        } catch (SQLException e) {
+            LoggerUtil.error("Failed to initialize vans view", e);
+            showAlert(Alert.AlertType.ERROR, "Помилка", "Не вдалося підключитися до бази даних: " + e.getMessage());
+        }
     }
 
+    // Метод для видалення обраного фургона зі списку
     @FXML
     private void handleDeleteVan() {
         VanEntry selectedVan = vansTable.getSelectionModel().getSelectedItem();
@@ -94,16 +110,19 @@ public class VansController {
                     vanService.deleteVan(selectedVan.getId());
                     // Видаляємо фургон з таблиці
                     vans.remove(selectedVan);
+                    LoggerUtil.info("Deleted van #" + selectedVan.getId());
                     showAlert(Alert.AlertType.INFORMATION, "Видалено", 
                             "Фургон #" + selectedVan.getId() + " успішно видалено!");
                 } catch (Exception e) {
+                    LoggerUtil.error("Failed to delete van #" + selectedVan.getId(), e);
                     showAlert(Alert.AlertType.ERROR, "Помилка", 
                             "Не вдалося видалити фургон: " + e.getMessage());
                 }
             }
         }
     }
-    
+
+    // Завантажуємо всі фургони з бд
     private void loadVans() {
         try {
             List<VanService.VanEntry> serviceEntries = vanService.loadAllVans();
@@ -111,35 +130,38 @@ public class VansController {
                 .map(e -> new VanEntry(e.getId(), e.getTotalVolume(), e.getCreatedAt()))
                 .collect(Collectors.toList());
             vans.setAll(controllerEntries);
+            LoggerUtil.info("Loaded " + controllerEntries.size() + " vans from database");
         } catch (Exception e) {
+            LoggerUtil.error("Failed to load vans data", e);
             showAlert(Alert.AlertType.ERROR, "Помилка", "Не вдалося завантажити дані фургонів: " + e.getMessage());
         }
     }
-    
+
+    // Показує вміст фургону відкриваючи нове вікно
     @FXML
     private void handleShowCoffee() {
         VanEntry selectedVan = vansTable.getSelectionModel().getSelectedItem();
         if (selectedVan == null) {
+            LoggerUtil.warn("Attempt to show coffee contents without selecting a van");
             showAlert(Alert.AlertType.WARNING, "Попередження", "Будь ласка, виберіть фургон зі списку");
             return;
         }
         
         try {
-            // Load coffee contents window
             FXMLLoader loader = new FXMLLoader(getClass().getResource("van-coffee-view.fxml"));
             Parent root = loader.load();
-            
-            // Get controller and set data
+
             VanCoffeeController controller = loader.getController();
             controller.setVanInfo(selectedVan);
             controller.setCoffeeList(FXCollections.observableArrayList(vanService.loadVan(selectedVan.getId()).getAllCoffee()));
-            
-            // Show window
+
             Stage stage = new Stage();
             stage.setTitle("Вміст фургону #" + selectedVan.getId());
             stage.setScene(new Scene(root));
             stage.show();
+            LoggerUtil.info("Opened coffee contents window for van #" + selectedVan.getId());
         } catch (Exception e) {
+            LoggerUtil.error("Failed to open coffee contents for van #" + selectedVan.getId(), e);
             showAlert(Alert.AlertType.ERROR, "Помилка", "Не вдалося відкрити вікно фургонів: " + e.getMessage());
         }
     }
@@ -157,7 +179,7 @@ public class VansController {
         alert.showAndWait();
     }
     
-    // Inner class to represent van entries in the table
+    // Внтурішній клас для представлення одного фургона у таблиці
     public static class VanEntry {
         private final int id;
         private final int totalVolume;

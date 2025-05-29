@@ -9,7 +9,8 @@
             prefHeight="600.0" prefWidth="1000.0"
             styleClass="van-content-dialog"
             stylesheets="@styles.css">
-    
+
+    <!-- TOP -->
     <top>
         <VBox>
             <HBox spacing="10" styleClass="header">
@@ -31,7 +32,8 @@
             </HBox>
         </VBox>
     </top>
-    
+
+    <!-- CENTER -->
     <center>
         <VBox spacing="10" styleClass="content-area">
             <padding>
@@ -70,7 +72,8 @@
             </TableView>
         </VBox>
     </center>
-    
+
+    <!-- BOTTOM -->
     <bottom>
         <HBox spacing="10" styleClass="action-bar">
             <padding>

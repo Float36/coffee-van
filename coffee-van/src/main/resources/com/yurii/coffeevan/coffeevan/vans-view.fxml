@@ -8,7 +8,8 @@
             fx:controller="com.yurii.coffeevan.coffeevan.VansController"
             prefHeight="500.0" prefWidth="800.0"
             stylesheets="@styles.css">
-    
+
+    <!-- TOP -->
     <top>
         <VBox>
             <HBox spacing="10" styleClass="header">
@@ -19,7 +20,8 @@
             </HBox>
         </VBox>
     </top>
-    
+
+    <!-- CENTER -->
     <center>
         <VBox spacing="10" styleClass="content-area">
             <padding>
@@ -38,7 +40,8 @@
             </TableView>
         </VBox>
     </center>
-    
+
+    <!-- BOTTOM -->
     <bottom>
         <HBox spacing="10" styleClass="action-bar">
             <padding>

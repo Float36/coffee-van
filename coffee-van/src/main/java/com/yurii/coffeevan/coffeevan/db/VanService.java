@@ -5,14 +5,15 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+// Це сервіс для взаємодії між бд та таблицями
 public class VanService {
     
-    public VanService() {
-        // Перевіряємо, чи встановлені тестові налаштування
-        // isTestMode = System.getProperty("db.url") != null && 
-        //              System.getProperty("db.url").contains("h2:mem:testdb");
+    private final Connection connection;
+
+    public VanService(Connection connection) {
+        this.connection = connection;
     }
-    
+    // Клас який представляє коротку інформацію про фургон
     public static class VanEntry {
         private final int id;
         private final int totalVolume;
@@ -29,12 +30,13 @@ public class VanService {
         public Timestamp getCreatedAt() { return createdAt; }
     }
 
+    // Зберігає фургон у таблицю vans і каву з нього в таблицю coffee
     public int saveVan(Van van) {
         int vanId = -1;
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // Insert van
+                // Вставити фургон
                 try (PreparedStatement stmt = conn.prepareStatement(
                     "INSERT INTO vans (total_volume) VALUES (?)",
                     Statement.RETURN_GENERATED_KEYS
@@ -49,7 +51,7 @@ public class VanService {
                     }
                 }
 
-                // Insert coffee
+                // Вставити каву
                 try (PreparedStatement stmt = conn.prepareStatement(
                     "INSERT INTO coffee (van_id, name, type, volume, price, weight, quality, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
                 )) {
@@ -72,15 +74,15 @@ public class VanService {
                 throw e;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             return -1;
         }
         return vanId;
     }
 
+    // Створює об'єкт, додає каву, повертає його
     public Van loadVan(int vanId) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            // First check if van exists
+            // Перевіряємо чи існує id
             try (PreparedStatement stmt = conn.prepareStatement("SELECT * FROM vans WHERE id = ?")) {
                 stmt.setInt(1, vanId);
                 ResultSet rs = stmt.executeQuery();
@@ -89,7 +91,7 @@ public class VanService {
                 }
             }
 
-            // Load coffee for the van
+            // Завантажуємо каву у фургон
             try (PreparedStatement stmt = conn.prepareStatement("SELECT * FROM coffee WHERE van_id = ?")) {
                 stmt.setInt(1, vanId);
                 ResultSet rs = stmt.executeQuery();
@@ -102,16 +104,15 @@ public class VanService {
                 return van;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             return null;
         }
     }
 
+    // Повертає список всіх фургонів у базі
     public List<VanEntry> loadAllVans() {
         List<VanEntry> vans = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement()) {
-            
             ResultSet rs = stmt.executeQuery("SELECT * FROM vans ORDER BY created_at DESC");
             while (rs.next()) {
                 vans.add(new VanEntry(
@@ -126,17 +127,18 @@ public class VanService {
         return vans;
     }
 
+    // Видаляє всі дані про фургон
     public boolean deleteVan(int vanId) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // Delete coffee first due to foreign key constraint
+                // Спочатку видаляє всю каву у фургоні
                 try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM coffee WHERE van_id = ?")) {
                     stmt.setInt(1, vanId);
                     stmt.executeUpdate();
                 }
 
-                // Then delete van
+                // Потім видаляє сам фургон
                 try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM vans WHERE id = ?")) {
                     stmt.setInt(1, vanId);
                     int rowsAffected = stmt.executeUpdate();
@@ -148,11 +150,11 @@ public class VanService {
                 throw e;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             return false;
         }
     }
 
+    // Витягує поля кави з ResultSet і створює відповідний підклас Coffee залежно від type
     private Coffee createCoffeeFromResultSet(ResultSet rs) throws SQLException {
         String name = rs.getString("name");
         String type = rs.getString("type");
